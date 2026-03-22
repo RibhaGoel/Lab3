@@ -15,57 +15,83 @@
     node src/calculator.js div 8 2    # -> 4
 */
 
-function showHelp() {
-  console.log(`Usage: node src/calculator.js <operation> <a> <b>\n\nOperations:\n  add    Add a and b\n  sub    Subtract b from a\n  mul    Multiply a by b\n  div    Divide a by b\n\nExamples:\n  node src/calculator.js add 2 3\n  node src/calculator.js div 8 2\n`);
+function toNumber(x) {
+  const n = Number(x);
+  if (Number.isNaN(n)) throw new Error('Operands must be valid numbers');
+  return n;
 }
 
-function exitWithError(msg, code = 1) {
-  console.error(`Error: ${msg}`);
-  process.exit(code);
+function add(a, b) {
+  return toNumber(a) + toNumber(b);
 }
 
-const args = process.argv.slice(2);
-if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
-  showHelp();
-  process.exit(0);
+function sub(a, b) {
+  return toNumber(a) - toNumber(b);
 }
 
-const [op, aStr, bStr] = args;
-if (aStr === undefined || bStr === undefined) {
-  exitWithError('Operation requires two numeric operands. See --help for usage.');
+function mul(a, b) {
+  return toNumber(a) * toNumber(b);
 }
 
-const a = Number(aStr);
-const b = Number(bStr);
-if (Number.isNaN(a) || Number.isNaN(b)) {
-  exitWithError('Operands must be valid numbers.');
+function div(a, b) {
+  const nb = toNumber(b);
+  if (nb === 0) throw new Error('Division by zero');
+  return toNumber(a) / nb;
 }
 
-let result;
-switch (op.toLowerCase()) {
-  case 'add':
-  case '+':
-    result = a + b;
-    break;
-  case 'sub':
-  case '-':
-    result = a - b;
-    break;
-  case 'mul':
-  case '*':
-  case 'x':
-    result = a * b;
-    break;
-  case 'div':
-  case '/':
-    if (b === 0) {
-      exitWithError('Division by zero is not allowed.', 2);
+module.exports = { add, sub, mul, div };
+
+// CLI entrypoint
+if (require.main === module) {
+  function showHelp() {
+    console.log(`Usage: node src/calculator.js <operation> <a> <b>\n\nOperations:\n  add    Add a and b\n  sub    Subtract b from a\n  mul    Multiply a by b\n  div    Divide a by b\n\nExamples:\n  node src/calculator.js add 2 3\n  node src/calculator.js div 8 2\n`);
+  }
+
+  function exitWithError(msg, code = 1) {
+    console.error(`Error: ${msg}`);
+    process.exit(code);
+  }
+
+  const args = process.argv.slice(2);
+  if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
+    showHelp();
+    process.exit(0);
+  }
+
+  const [op, aStr, bStr] = args;
+  if (aStr === undefined || bStr === undefined) {
+    exitWithError('Operation requires two numeric operands. See --help for usage.');
+  }
+
+  try {
+    let result;
+    switch (op.toLowerCase()) {
+      case 'add':
+      case '+':
+        result = add(aStr, bStr);
+        break;
+      case 'sub':
+      case '-':
+        result = sub(aStr, bStr);
+        break;
+      case 'mul':
+      case '*':
+      case 'x':
+        result = mul(aStr, bStr);
+        break;
+      case 'div':
+      case '/':
+        result = div(aStr, bStr);
+        break;
+      default:
+        exitWithError(`Unknown operation: ${op}. Supported operations: add, sub, mul, div`);
     }
-    result = a / b;
-    break;
-  default:
-    exitWithError(`Unknown operation: ${op}. Supported operations: add, sub, mul, div`);
-}
 
-// Print result to stdout
-console.log(result);
+    console.log(result);
+  } catch (err) {
+    if (/division by zero/i.test(err.message)) {
+      exitWithError(err.message, 2);
+    }
+    exitWithError(err.message);
+  }
+}

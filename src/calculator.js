@@ -39,12 +39,28 @@ function div(a, b) {
   return toNumber(a) / nb;
 }
 
-module.exports = { add, sub, mul, div };
+function modulo(a, b) {
+  const nb = toNumber(b);
+  if (nb === 0) throw new Error('Modulo by zero');
+  return toNumber(a) % nb;
+}
+
+function power(base, exponent) {
+  return Math.pow(toNumber(base), toNumber(exponent));
+}
+
+function squareRoot(n) {
+  const num = toNumber(n);
+  if (num < 0) throw new Error('Cannot take square root of negative number');
+  return Math.sqrt(num);
+}
+
+module.exports = { add, sub, mul, div, modulo, power, squareRoot };
 
 // CLI entrypoint
 if (require.main === module) {
   function showHelp() {
-    console.log(`Usage: node src/calculator.js <operation> <a> <b>\n\nOperations:\n  add    Add a and b\n  sub    Subtract b from a\n  mul    Multiply a by b\n  div    Divide a by b\n\nExamples:\n  node src/calculator.js add 2 3\n  node src/calculator.js div 8 2\n`);
+    console.log(`Usage: node src/calculator.js <operation> <a> <b>\n\nOperations:\n  add    Add a and b\n  sub    Subtract b from a\n  mul    Multiply a by b\n  div    Divide a by b\n  mod    Remainder of a divided by b\n  pow    Raise base to exponent\n  sqrt   Square root of a (only one operand)\n\nExamples:\n  node src/calculator.js add 2 3\n  node src/calculator.js div 8 2\n  node src/calculator.js mod 10 3\n  node src/calculator.js pow 2 8\n  node src/calculator.js sqrt 9\n`);
   }
 
   function exitWithError(msg, code = 1) {
@@ -59,13 +75,20 @@ if (require.main === module) {
   }
 
   const [op, aStr, bStr] = args;
-  if (aStr === undefined || bStr === undefined) {
-    exitWithError('Operation requires two numeric operands. See --help for usage.');
+  const lop = op.toLowerCase();
+  if (lop === 'sqrt') {
+    if (aStr === undefined) {
+      exitWithError('sqrt operation requires one numeric operand. See --help for usage.');
+    }
+  } else {
+    if (aStr === undefined || bStr === undefined) {
+      exitWithError('Operation requires two numeric operands. See --help for usage.');
+    }
   }
 
   try {
     let result;
-    switch (op.toLowerCase()) {
+    switch (lop) {
       case 'add':
       case '+':
         result = add(aStr, bStr);
@@ -83,13 +106,26 @@ if (require.main === module) {
       case '/':
         result = div(aStr, bStr);
         break;
+      case 'mod':
+      case '%':
+        result = modulo(aStr, bStr);
+        break;
+      case 'pow':
+      case '**':
+      case 'power':
+        result = power(aStr, bStr);
+        break;
+      case 'sqrt':
+      case 'root':
+        result = squareRoot(aStr);
+        break;
       default:
-        exitWithError(`Unknown operation: ${op}. Supported operations: add, sub, mul, div`);
+        exitWithError(`Unknown operation: ${op}. Supported operations: add, sub, mul, div, mod, pow, sqrt`);
     }
 
     console.log(result);
   } catch (err) {
-    if (/division by zero/i.test(err.message)) {
+    if (/(division|modulo) by zero/i.test(err.message)) {
       exitWithError(err.message, 2);
     }
     exitWithError(err.message);
